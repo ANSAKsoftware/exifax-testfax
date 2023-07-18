@@ -1,0 +1,176 @@
+-- ##########################################################################
+--
+--  Copyright (c) 2023, Arthur N. Klassen
+--  All rights reserved.
+--
+--  Redistribution and use in source and binary forms, with or without
+--  modification, are permitted provided that the following conditions are met:
+--
+--  1. Redistributions of source code must retain the above copyright notice,
+--     this list of conditions and the following disclaimer.
+--
+--  2. Redistributions in binary form must reproduce the above copyright notice,
+--     this list of conditions and the following disclaimer in the documentation
+--     and/or other materials provided with the distribution.
+--
+--  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+--  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+--  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+--  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+--  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+--  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+--  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+--  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+--  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+--  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+--  POSSIBILITY OF SUCH DAMAGE.
+--
+-- ##########################################################################
+--
+--     May you do good and not evil.
+--     May you find forgiveness for yourself and forgive others.
+--     May you share freely, never taking more than you give.
+--
+-- ##########################################################################
+--
+--  testFaxFunc.mysql -- source for a testFax function within MariaDB / MySql
+--    to allow exim to de-taint fax@<faxnumber>.fax email addresses for HylaFax
+--    via ExiFax, as required since upgrading from Debian "Bullseye" (version
+--    4.94) to the version in Debian "Bookworm" (version 4.96).
+--
+--  assuming you put this into database 'detaintfax' for the 'exim' user,
+--  use in exim4 config files in a router block as:
+--
+-- exifax:
+--       driver = manualroute
+--       transport = exifax
+--       route_list = "*.fax"
+--       address_data = ${lookup mysql{select testFax('${quote_mysql:$local_part@$domain}')} }
+--
+--  with corresponding transport
+--
+--  exifax:
+--      driver = pipe
+--      user = faxmaster
+--      command = "/usr/bin/faxmail -N -T -n $address_data"
+--      
+
+
+DROP TABLE IF EXISTS allowed_codes;
+DROP TABLE IF EXISTS blocked_codes;
+DROP FUNCTION IF EXISTS testFax;
+
+create table allowed_codes ( code char(3) );
+create table blocked_codes ( code char(3) );
+
+-- if you put values in allowed_codes, blocked_codes will be ignored
+-- add lines, if you will, of (these are for BC, AB as at Summer 2023)
+-- insert into allowed_codes(code) values('604');
+-- insert into allowed_codes(code) values('250');
+-- insert into allowed_codes(code) values('778');
+-- insert into allowed_codes(code) values('236');
+-- insert into allowed_codes(code) values('672');
+-- insert into allowed_codes(code) values('403');
+-- insert into allowed_codes(code) values('780');
+-- insert into allowed_codes(code) values('368');
+-- insert into allowed_codes(code) values('587');
+-- insert into allowed_codes(code) values('825');
+--
+-- or you may want to block, you might consider blocking faxes to the Canadian territories:
+-- insert into blocked_codes(code) values('867');
+-- NOTE (again) ... if allowed_codes is not empty, blocked_codes will be ignored
+
+DELIMITER $$
+
+-- NANPA version, blocks 900 by default, parses off beginning 1 if there is one
+-- only accepts 1 + 10 digits or 10 digits ... at all
+-- this version is ONLY valid for North American limits
+-- for non-North American settings, see below for a different version, in comment delimiters
+CREATE FUNCTION testFax(phaddr char(20)) RETURNS char(20)
+    READS SQL DATA
+    DETERMINISTIC
+BEGIN
+    DECLARE provo_valid INT DEFAULT 0;
+    DECLARE ten_valid INT DEFAULT 0;
+    DECLARE eleven_valid INT DEFAULT 0;
+    DECLARE have_blocked INT DEFAULT 0;
+    DECLARE have_allowed INT DEFAULT 0;
+    DECLARE prefix char(5) DEFAULT 'fax@';
+    DECLARE provo_result char(20);
+    DECLARE provo_number char(20);
+    DECLARE acode char(3);
+    DECLARE filter_this INT DEFAULT 0;
+    DECLARE on_the_list INT DEFAULT 0;
+    DECLARE result char(20) DEFAULT NULL;
+
+    SET provo_valid = phaddr REGEXP 'fax@[0-9]+.fax';
+    SET provo_result = REGEXP_REPLACE(phaddr, '.fax', '');
+
+    IF provo_valid > 0 THEN
+        SET ten_valid = provo_result REGEXP 'fax@[2-9][0-9][0-9][2-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+        SET eleven_valid = provo_result REGEXP 'fax@1[2-9][0-9][0-9][2-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+        IF ten_valid > 0 OR eleven_valid > 0 THEN
+            IF ten_valid > 0 THEN
+                SET provo_number = REGEXP_REPLACE(provo_result, 'fax@', '');
+            ELSEIF eleven_valid > 0 THEN
+                SET provo_number = REGEXP_REPLACE(provo_result, 'fax@1', '');
+                SET prefix = CONCAT(prefix, '1');
+            END IF;
+
+            -- if you're willing to let your peeps call "premium services", delete this block
+            SET acode = SUBSTR(provo_number, 1, 3);
+            IF acode NOT LIKE '900' THEN
+                SELECT COUNT(*) INTO have_blocked FROM blocked_codes;
+                SELECT COUNT(*) INTO have_allowed FROM allowed_codes;
+                IF have_blocked = 0 AND have_allowed = 0 THEN
+                    SET result = CONCAT(prefix, provo_number);
+                ELSE
+                    BEGIN
+                        IF have_allowed > 0 THEN
+                            BEGIN
+                                SELECT COUNT(*) INTO filter_this FROM allowed_codes wac WHERE acode;
+                                -- if we have area codes on the allowed list, follow that
+                                IF filter_this > 0 THEN
+                                    SELECT COUNT(*) INTO on_the_list FROM allowed_codes wac WHERE wac.code = acode;
+                                    IF on_the_list > 0 THEN
+                                        SET result = CONCAT(prefix, provo_number);
+                                    END IF;
+                                END IF;
+                            END;
+                        ELSE -- IF have_blocked > 0 THEN
+                            BEGIN
+                                SELECT COUNT(*) INTO filter_this FROM blocked_codes;
+                                -- if we have area codes on the blocked list, follow that
+                                IF filter_this > 0 THEN
+                                    SELECT COUNT(*) INTO on_the_list FROM blocked_codes bac WHERE bac.code = acode;
+                                    IF on_the_list = 0 THEN
+                                        SET result = CONCAT(prefix, provo_number);
+                                    END IF;
+                                END IF;
+                            END;
+                        END IF;
+                    END;
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+    RETURN result;
+END$$
+DELIMITER ;
+
+-- this is a provisional, non-North American, totally generic version
+-- DELIMITER $$
+-- CREATE FUNCTION testFax(phaddr char(50)) RETURNS char(50)
+--     DETERMINISTIC
+-- BEGIN
+--     DECLARE valid INT DEFAULT 0;
+--     DECLARE result char(50) DEFAULT NULL;
+--
+--     SET valid = phaddr REGEXP 'fax@[0-9]+.fax';
+--     IF valid > 0 THEN
+--         SET result = REGEXP_REPLACE(phaddr, '.fax', '');
+--     END IF;
+--     RETURN result;
+-- END$$
+-- DELIMITER ;
+
