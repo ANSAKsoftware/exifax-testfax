@@ -174,3 +174,42 @@ DELIMITER ;
 -- END$$
 -- DELIMITER ;
 
+-- this is a provisional, UK-allow-calling-to-Europe version; to remove "Europe",
+--     remove the last ELSE clause; to restrict to only local numbers, remove
+--     the one before that (as well as the variables used exclusively in those blocks)
+-- DELIMITER $$
+-- CREATE FUNCTION testFax(phaddr char(50)) RETURNS char(50)
+--     DETERMINISTIC
+-- BEGIN
+--     DECLARE localValid INT DEFAULT 0;
+--     DECLARE trunkValid INT DEFAULT 0;
+--     DECLARE intlValid INT DEFAULT 0;
+--     DECLARE crudeValid INT DEFAULT 0;
+--     DECLARE crudeResult char(50) DEFAULT NULL;
+--     DECLARE result char(50) DEFAULT NULL;
+--
+--     SET crudeValid = phaddr REGEXP 'fax@[0-9]+.fax';
+--     IF crudeValid > 0 THEN
+--         SET crudeResult = REGEXP_REPLACE(phaddr, '.fax', '');
+--         -- local calls
+--         SET localValid = crudeResult REGEXP 'fax@[1-9][0-9]+';
+--         IF localValid > 0 THEN
+--             SET localValid = crudeResult REGEXP 'fax@[1-9][0-9]{4,7}$';
+--             IF localValid > 0 THEN
+--                 SET result = crudeResult;
+--             END IF;
+--         ELSE
+--             SET trunkValid = crudeResult REGEXP 'fax@0[1-9][0-9]+';
+--             IF trunkValid > 0 THEN
+--                 SET RESULT = crudeResult;
+--             ELSE
+--                 SET intlValid = crudeResult REGEXP 'fax@00[34][1-9][0-9]+';
+--                 IF intlValid > 0 THEN
+--                     SET RESULT = crudeResult;
+--                 END IF;
+--             END IF;
+--         END IF;
+--     END IF;
+--     RETURN result;
+-- END$$
+-- DELIMITER ;
