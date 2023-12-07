@@ -34,7 +34,7 @@ Put authorized 3-digit area codes as strings into the `allowed_codes` table. **B
 
 After changes to `exim4` config files, you will be ready to forward faxes from your exim MTA.
 
-Note: There are areas of North America that don't require 10-digit dialing but I don't know that any of these would prohibit 11 digit dialing back into the same area code. If they do, or if your contact list features 7 and 8-digit dialing cases, changes to this code are left (for the moment) as an exercise to the end-user -- and patches will be accepted.
+Note: There are areas of the North American Numbering Plan Area (NANPA) that don't require 10-digit dialing but I don't know that any of these would prohibit 11 digit dialing back into the same area code. If they do, or if your contact list features 7 and 8-digit dialing cases, changes to this code are left (for the moment) as an exercise to the end-user -- and patches will be accepted.
 
 ### Customizing for Everywhere Else
 
