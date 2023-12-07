@@ -14,16 +14,16 @@ to be forwarded to Hylafax.
 ## How to Use -- mysql side
 
 1. `git clone` this repository into some arbitrary location
-2. customize `testFaxFunc.mysql`. (see sectinons for **North America** vs. **Everywhere Else** below)
+2. customize `testFaxFunc.mysql`. (see sections for **North America** vs. **Everywhere Else** below)
 3. You may want to create a branch local to your environment with your changes so that you can track them.
-4. Execute `testFaxFunc.mysql` against a specific database name in your msyql instance.
+4. Execute `testFaxFunc.mysql` against a specific database in your msyql instance.
 
 After this, the existence or not of `testFaxFunc.mysql` is irrelevant to the operation of fax forwarding.
 
 Take note of the access details for where `testFaxFunc.mysql` was executed so that you can configure `exim` to access it, too.
 
 ### Customizing for North America
-The default content of the file purifies 10 and 11 digit numbers for use in North American contexts. Telephone numbers of any other form than `1NXXNXXXXXX` or `NXXNXXXXXX` (where N is any digit 2 through 9, and X is any digit 0 through 9) are rejected. `900` numbers are also rejected.
+The default filter accepts only 10 and 11 digit numbers as is commonly required in North American contexts. Telephone numbers of any form other than `1NXXNXXXXXX` or `NXXNXXXXXX` (where N is any digit 2 through 9, and X is any digit 0 through 9) are rejected. `900` numbers which are all used to access high-cost-per-minute services are also rejected.
 
 Additionally, the mysql database initializes empty tables of `allowed_codes` and `blocked_codes`.
 
@@ -33,6 +33,8 @@ Put forbidden 3-digit area codes as strings into the `blocked_codes` table. **OR
 Put authorized 3-digit area codes as strings into the `allowed_codes` table. **BUT. NOT. BOTH.**
 
 After changes to `exim4` config files, you will be ready to forward faxes from your exim MTA.
+
+Note: There are areas of North America that don't require 10-digit dialing but I don't know that any of these would prohibit 11 digit dialing back into the same area code. If they do, or if your contact list features 7 and 8-digit dialing cases, changes to this code are left (for the moment) as an exercise to the end-user -- and patches will be accepted.
 
 ### Customizing for Everywhere Else
 
