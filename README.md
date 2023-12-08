@@ -14,9 +14,9 @@ to be forwarded to Hylafax.
 ## How to Use -- mysql side
 
 1. `git clone` this repository into some arbitrary location
-2. customize `testFaxFunc.mysql`. (see sections for **North America** vs. **Everywhere Else** below)
-3. You may want to create a branch local to your environment with your changes so that you can track them.
-4. Execute `testFaxFunc.mysql` against a specific database in your msyql instance.
+2. customize `testFaxFunc.mysql` (see sections for **North America** vs. **Everywhere Else** below)
+3. you may want to create a branch local to your environment with your changes so that you can track them
+4. execute `testFaxFunc.mysql` against a specific database in your msyql instance
 
 After this, the existence or not of `testFaxFunc.mysql` is irrelevant to the operation of fax forwarding.
 
@@ -41,10 +41,10 @@ Note: There are areas of the North American Numbering Plan Area (NANPA) that don
 In comments, after the North American implementation, there is a simple implementation that does nothing more than look for `fax@` + some arbitrary phone number (maximum size is 50 but changing that if needed is no trouble) + `.fax` and if it finds it, to return `fax@` + some arbitrary phone number.
 
 Ideas that may govern your choices:
-* You may want to allow ALL numbers that do not start with 0 (denotes local calls in, for instance the UK and much of Europe). (possible regex: `[1-9][0-9]+`)
-* You may want to allow ALL numbers that start with a single 0 (denotes in-country non-local calls in UK, Europe) then a non-zero number followed by any numbers for any length. (possible regex: `0[1-9][0-9]+`)
-* You may want to block ALL numbers that start with two 0s (denotes international dialing in UK, Europe). (possible regex: `00[0-9]+`)
-* Or maybe you will want to enable international dialing to a limited number of countries, e.g. within the EU, allowing prefixes of 00 and any of the country codes in the EU (In that case, you may want to change the definition of `allowed_codes` and `blocked_codes` and choose regexes accordingly)
+* you may want to allow ALL numbers that do not start with 0 which denotes local calls in, for instance the UK and much of Europe (possible regex: `[1-9][0-9]+`)
+* you may want to allow ALL numbers that start with a single 0 which denotes in-country non-local calls in UK, Europe when followed by a non-zero number followed by any numbers for any length (possible regex: `0[1-9][0-9]+`)
+* you may want to block ALL numbers that start with two 0s which denotes international dialing in UK, Europe (possible regex: `00[0-9]+`)
+* or maybe you will want to enable international dialing to a limited number of countries, e.g. within the EU, allowing prefixes of 00 and any of the country codes in the EU (In that case, you may want to change the definition of the `allowed_codes` and `blocked_codes` tables, too)
 
 But I know just enough about different countries' telephone systems to do no more than propose possibilities here.
 
@@ -70,4 +70,3 @@ exifax:
 ```
 
 and after reloading your config files, your system should be Good to Go™ to forward faxes via HylaFax.
-
