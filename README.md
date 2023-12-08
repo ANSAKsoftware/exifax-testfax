@@ -1,7 +1,7 @@
 # exifax-testfax
-Glue to allow connecting HylaFax, through exifax to exim 4.96, written originally to assist my brother, a SysAdmin for a local community services non-profit.
+Glue to allow connecting HylaFax to exim 4.96, through exifax. It was written originally to assist my brother, a SysAdmin for a local community services non-profit.
 
-It consists of one file needed to initialize a `mysql` database, so that it can be used to "detaint" fax e-mails of the form:
+It consists of this README and one file needed only long enough to initialize a `mysql` (or `mariadb`) database, so that it can be used to "detaint" fax e-mails of the form:
 ```
 fax@12366048899.fax
 ```
@@ -11,7 +11,7 @@ fax@12366048899
 ```
 to be forwarded to Hylafax.
 
-## How to Use -- mysql side
+## How to Use -- `mysql` side
 
 1. `git clone` this repository into some arbitrary location
 2. customize `testFaxFunc.mysql` (see sections for **North America** vs. **Everywhere Else** below)
@@ -25,7 +25,7 @@ Take note of the access details for where `testFaxFunc.mysql` was executed so th
 ### Customizing for North America
 The default filter accepts only 10 and 11 digit numbers as is commonly required in North American contexts. Telephone numbers of any form other than `1NXXNXXXXXX` or `NXXNXXXXXX` (where N is any digit 2 through 9, and X is any digit 0 through 9) are rejected. `900` numbers which are all used to access high-cost-per-minute services are also rejected.
 
-Additionally, the mysql database initializes empty tables of `allowed_codes` and `blocked_codes`.
+Additionally, the `mysql` database initializes empty tables of `allowed_codes` and `blocked_codes`.
 
 **NB**: `blocked_codes` ONLY affects the validation of area codes if the `allowed_codes` table is empty.
 
@@ -48,9 +48,17 @@ Ideas that may govern your choices:
 
 But I know just enough about different countries' telephone systems to do no more than propose possibilities here.
 
+## How to test
+
+Once you have created the `mysql` database and applied your version of `testFaxFunc.mysql` to it, you can test the result from a `mysql` prompt with successive calls to
+```
+select testFax('fax@12366048899.fax');
+```
+replacing `12366048899` with the different test numbers you need to accept or block. Accepted addresses will be given as `fax@12366048899'. Blocked numbers will return an empty string.
+
 ## How to use -- exim side
 
-You will need to manage database name and appropriate secrets on your system as you see fit. For more information on how to do this, [see exim's documentation](https://www.exim.org/exim-html-current/doc/html/spec_html/ch-file_and_database_lookups.html#SECID72). Once `exim4` can use MySQL, add this block to your routers:
+You will need to manage database name and appropriate secrets on your system as you see fit. For more information on how to do this, [see exim's documentation](https://www.exim.org/exim-html-current/doc/html/spec_html/ch-file_and_database_lookups.html#SECID72). Once `exim4` can use `mysql`, add this block to your routers:
 
 ```
 exifax:
@@ -70,3 +78,8 @@ exifax:
 ```
 
 and after reloading your config files, your system should be Good to Go™ to forward faxes via HylaFax.
+
+## Notes
+
+* in every instance where `mysql` occurs above, `mariadb` could be used just as easily. It should be noted that while `mysql` has the brand recognition (almost to the "Kleenex" point, frankly) that package no longer respects your freedom, nor the freely donated expertise of its developer community, and `mariadb` should, in every instance, be preferred. I used `mysql` in the above without intending to slight `mariadb` at all.
+* the number `+1.236.604.8899` is, to my knowledge unassigned and unassignable since `236` is an overlay area code over `604` (and `250`). If this number is ever assigned to anyone, I apologize in advance to the poor sod who gets spam calls because of me.
