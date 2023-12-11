@@ -175,8 +175,8 @@ DELIMITER ;
 -- DELIMITER ;
 
 -- this is a provisional, UK-allow-calling-to-Europe version; to remove "Europe",
---     comment out the last ELSE clause; to restrict to local numbers only comment
---     out the one before that (comment out the variables those blocks use, too)
+--     remove the last ELSE clause; to restrict to only local numbers, remove
+--     the one before that (as well as the variables used exclusively in those blocks)
 -- DELIMITER $$
 -- CREATE FUNCTION testFax(phaddr char(50)) RETURNS char(50)
 --     DETERMINISTIC

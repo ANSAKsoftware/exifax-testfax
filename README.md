@@ -16,11 +16,11 @@ to be forwarded to Hylafax.
 1. `git clone` this repository into some arbitrary location
 2. customize `testFaxFunc.mysql` (see sections for **North America** vs. **Everywhere Else** below)
 3. you may want to create a branch local to your environment with your changes so that you can track them
-4. execute `testFaxFunc.mysql` against a specific database in your msyql instance
+4. execute `testFaxFunc.mysql` against a specific database in your `msyql` instance
 
 After this, the existence or not of `testFaxFunc.mysql` is irrelevant to the operation of fax forwarding.
 
-Take note of the access details for where `testFaxFunc.mysql` was executed so that you can configure `exim` to access it, too.
+Take note of the access details (username, password, database name) for where `testFaxFunc.mysql` was executed so that you can configure `exim` to access it, too.
 
 ### Customizing for North America
 The default filter accepts only 10 and 11 digit numbers as is commonly required in North American contexts. Telephone numbers of any form other than `1NXXNXXXXXX` or `NXXNXXXXXX` (where N is any digit 2 through 9, and X is any digit 0 through 9) are rejected. `900` numbers which are all used to access high-cost-per-minute services are also rejected.
@@ -38,7 +38,7 @@ Note: There are areas of the North American Numbering Plan Area (NANPA) that don
 
 ### Customizing for Everywhere Else
 
-In comments, after the North American implementation, there is a simple implementation that does nothing more than look for `fax@` + some arbitrary phone number (maximum size is 50 but changing that if needed is no trouble) + `.fax` and if it finds it, to return `fax@` + some arbitrary phone number.
+In comments, after the North American implementation, there is a simple implementation that does nothing more than look for `fax@` + some arbitrary phone number (maximum size is 50 but changing that if needed is no trouble) + `.fax` and if it finds it, to return `fax@` + some arbitrary phone number. Following that there is another commented sample that might function as a starting point for a solution in the UK, or in any country whose phone system works in much the same way.
 
 Ideas that may govern your choices (in, for instance, the UK):
 * you may want to allow ALL numbers that do not start with 0 which denotes local calls (possible regex: `[1-9][0-9]+`)
@@ -50,9 +50,9 @@ But I know just enough about different countries' telephone systems to do no mor
 
 ### Further ideas
 
-You may want to permit faxes to be sent only to certain numbers.
-Or you may want to permit faxes sent to certain numbers that don't satisfy other criteria.
-Or you may want to block sending faxes to certain numbers even if they satisfy the other criteria.
+* You may want to permit faxes to be sent only to certain numbers.
+* Or you may want to permit faxes sent to certain numbers that don't satisfy other criteria.
+* Or you may want to block sending faxes to certain numbers even if they satisfy the other criteria.
 
 In those cases, you can add whitelist or blacklist tables and the associated logic. Whatever can be written into a `mysql` `FUNCTION` is available as an option.
 
