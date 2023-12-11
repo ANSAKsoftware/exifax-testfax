@@ -40,13 +40,21 @@ Note: There are areas of the North American Numbering Plan Area (NANPA) that don
 
 In comments, after the North American implementation, there is a simple implementation that does nothing more than look for `fax@` + some arbitrary phone number (maximum size is 50 but changing that if needed is no trouble) + `.fax` and if it finds it, to return `fax@` + some arbitrary phone number.
 
-Ideas that may govern your choices:
-* you may want to allow ALL numbers that do not start with 0 which denotes local calls in, for instance the UK and much of Europe (possible regex: `[1-9][0-9]+`)
-* you may want to allow ALL numbers that start with a single 0 which denotes in-country non-local calls in UK, Europe when followed by a non-zero number followed by any numbers for any length (possible regex: `0[1-9][0-9]+`)
-* you may want to block ALL numbers that start with two 0s which denotes international dialing in UK, Europe (possible regex: `00[0-9]+`)
-* or maybe you will want to enable international dialing to a limited number of countries, e.g. within the EU, allowing prefixes of 00 and any of the country codes in the EU (In that case, you may want to change the definition of the `allowed_codes` and `blocked_codes` tables, too)
+Ideas that may govern your choices (in, for instance, the UK):
+* you may want to allow ALL numbers that do not start with 0 which denotes local calls (possible regex: `[1-9][0-9]+`)
+* you may want to allow ALL numbers that start with a single 0 which denotes in-country non-local calls when followed by a non-zero number followed by any numbers for some length (possible regex: `0[1-9][0-9]+`)
+* you may want to block ALL numbers that start with two 0s which denotes international dialing (possible regex: `00[0-9]+`)
+* or maybe you will want to enable international dialing to a limited number of countries, e.g. within the EU, allowing prefixes of 00 and any of the country codes in the EU (In that case, you may want to change the definition of the `allowed_codes` and `blocked_codes` tables, too; or for Europe, since all country-codes in Europe start with 3 or 4, possible regex: `00[34][1-9][0-9]+`)
 
 But I know just enough about different countries' telephone systems to do no more than propose possibilities here.
+
+### Further ideas
+
+You may want to permit faxes to be sent only to certain numbers.
+Or you may want to permit faxes sent to certain numbers that don't satisfy other criteria.
+Or you may want to block sending faxes to certain numbers even if they satisfy the other criteria.
+
+In those cases, you can add whitelist or blacklist tables and the associated logic. Whatever can be written into a `mysql` `FUNCTION` is available as an option.
 
 ## How to test
 
